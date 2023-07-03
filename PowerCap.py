@@ -70,28 +70,28 @@ def extract_folder_name(path):
 
 def userinputSelection ():
 
-    NumSource = input("Enter the number of source: ")
+    NumSource = int(input("Enter the number of source: "))
     for i in range(NumSource):
         SourceLocation[i] = input("Enter the source location: ")
 
 
     choice = input("Enter your choice, 1 for jumping . 2 for providing values: ")
     if choice == '1':
-        NumLP = input("Enter the number of LP: ")
+        NumLP = int(input("Enter the number of LP: "))
         for i in range(NumLP):
-            LP[i] = input("Enter the Long power values: ")
+            LP.append (int(input("Enter the Long power values: ")))
         
-        NumSP = input("Enter the number of SP: ")
+        NumSP = int( input("Enter the number of SP: "))
         for i in range(NumSP):
-            SP[i] = input("Enter the Short power values: ")
+            SP.append(int(input("Enter the Short power values: ")))
 
-        NumLI = input("Enter the number of LI: ")
+        NumLI = int(input("Enter the number of LI: "))
         for i in range(NumLI):
-            LI[i] = input("Enter the Long interval values: ")
+            LI.append(int( input("Enter the Long interval values: ")))
 
-        NumSI = input("Enter the number of SI: ")
+        NumSI = int(input("Enter the number of SI: "))
         for i in range(NumSI):
-            SI[i] = input("Enter the Short interval values: ")    
+            SI.append(int(input("Enter the Short interval values: ")))
 
 
     elif choice == '2':
@@ -100,16 +100,16 @@ def userinputSelection ():
         ChangeValue = input("Enter the value to jump: ")
         choice2 = input("Enter your choice, 1 default of system, 2 for providing value: ")
         if choice2 == '1':
-            LP[0]= 100
-            SP[0]= 100
-            LI[0]= 100
-            SI[0]= 100
+            LP.append( 100)
+            SP.append( 100)
+            LI.append (100)
+            SI.append (100)
         else :
-            LP[0]= input("Enter the Long power values: ")
-            SP[0]= input("Enter the Short power values: ")
-            LI[0]= input("Enter the Long interval values: ")
-            SI[0]= input("Enter the Short interval values: ")
-        for i in range(NumChanges -2):
+            LP.append(int(input("Enter the Long power values: ")))
+            SP.append(int(input("Enter the Short power values: ")))
+            LI.append(int(input("Enter the Long interval values: ")))
+            SI.append(int(input("Enter the Short interval values: ")))
+        for i in range(0,NumChanges -2):
             LP[i+1] = LP[i] + ChangeValue
             SP[i+1] = SP[i] + ChangeValue
             LI[i+1] = LI[i] + ChangeValue
