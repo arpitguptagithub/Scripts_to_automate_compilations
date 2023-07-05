@@ -17,6 +17,7 @@ import os
 import subprocess as sp
 import time
 from pathlib import Path
+import csv
 #import pp
 from datetime import datetime
 #import psutil
@@ -127,8 +128,11 @@ def sample_core_frequency(home,stop,Qu):
 
 
 
-def move_output_files(SourceLocation ,subfolder_name, output_folder):
+def move_output_files(SourceLocation ,subfolder_name, subfolder_name2, output_folder):
     # Create the "ThisOutput" folder if it doesn't exist
+
+    df= pd.read_csv("power_data.csv")
+
     output_folder_path = os.path.join(".", output_folder)
     if not os.path.exists(output_folder_path):
         os.makedirs(output_folder_path)
@@ -137,16 +141,40 @@ def move_output_files(SourceLocation ,subfolder_name, output_folder):
     subfolder_path = os.path.join(output_folder_path, subfolder_name)
     if not os.path.exists(subfolder_path):
         os.makedirs(subfolder_path)
+    
+    subfolder_path2 = os.path.join(subfolder_path, subfolder_name2)
+    if not os.path.exists(subfolder_path2):
+        os.makedirs(subfolder_path2)
+
+
+#     updated_df = df.append(new_data, ignore_index=True)
+
+# # Change the file location of just the last row
+
+# last_row_index = updated_df.index[-1]  # Get the index of the last row
+# updated_df.at[last_row_index, 'file_location'] = 'new_file_location'
+
+# # Write the updated DataFrame to a CSV file
+# updated_df.to_csv('updated_data.csv', index=False)
+
+
+    #update the location in last row
+
 
     # Move all files in the source location to the "ThisOutput" folder
     files = glob.glob(os.path.join(SourceLocation, "*.pdf"),recursive = True)
     for file in files:
         if os.path.isfile(file):
-            destination_file_path = os.path.join(subfolder_path, os.path.basename(file))
+            destination_file_path = os.path.join(subfolder_path2, os.path.basename(file))
             print("destination of the file")
             print (destination_file_path)
             shutil.move(file, destination_file_path)
+            lr= df.index[-1]
+            df.at[lr,'file_location'] = destination_file_path
+     
             # os.rename(file, destination_file_path)
+    df.to_csv("power_data.csv",index=False)
+    
 
 def extract_folder_name(path):
     folder_name = os.path.basename(os.path.dirname(path))
@@ -207,8 +235,20 @@ def userinputSelection ():
 
 
 def execute(SourceLocation, LP, SP, LI, SI):
-    lpc, spc, lic, sic = 100000, 100000, 100000, 100000
+    lpc, spc, lic, sic = 1000000, 10000000, 10000000, 10000000
    # Benchmark = ["2mm","seidel-2d","atax"]
+    fields = ["binary_name","watts_long","sec_long","watts_short","sec_short","file_location"]
+    rows = ["" ," " , " ", " "]
+    filename = "power_data.csv"
+    with open(filename, 'w') as csvfile:
+         csvwriter = csv.writer(csvfile) 
+        
+    # writing the fields 
+         csvwriter.writerow(fields) 
+        
+    # writing the data rows 
+         csvwriter.writerows(rows)
+
 
     # Run initial command
     output_folder = "Output"
@@ -218,67 +258,71 @@ def execute(SourceLocation, LP, SP, LI, SI):
      
 
     CmdBaseC = "sudo rapl-set  --zone=0 -c "
-    Cmdlp= CmdBaseC + "0"+ "-l"
-    Cmdsp= CmdBaseC + "1"+ "-l"
-    Cmdli= CmdBaseC + "0"+ "-s"
-    Cmdsi= CmdBaseC + "1"+ "-s"
+    Cmdlp= CmdBaseC + "0 "+ "-l "
+    Cmdsp= CmdBaseC + "1 "+ "-l "
+    Cmdli= CmdBaseC + "0 "+ "-s "
+    Cmdsi= CmdBaseC + "1 "+ "-s "
 
-    Cmdlpr= CmdBaseC + "0"+ "-l " + str(lpc)
-    Cmdspr= CmdBaseC + "1"+ "-s " +str(spc)
-    Cmdlir= CmdBaseC + "0"+ "-l " +str(lic)
+    Cmdlpr= CmdBaseC + "0 "+ "-l " + str(lpc)
+    Cmdspr= CmdBaseC + "1 "+ "-s " +str(spc)
+    Cmdlir= CmdBaseC + "0 "+ "-l " +str(lic)
     print (Cmdlir)
     #c1 , c2 ,c3, c4 
     # Process LP array
     for i in range(len(LP) ):
         print (Cmdlp+str(LP[i]))
-        sp.Popen( (Cmdlp+str(LP[i]) ),stdout= sp.PIPE ,shell = True)
+        sp.run( (Cmdlp+str(LP[i]) ) ,shell = True)
         for j in range(len(SourceLocation) ):
              #sp.run(["python3", "power_cap_frequency_plot2.py", SourceLocation[j]])
             main(SourceLocation[j])
-            subfolder_name = extract_folder_name(SourceLocation[j]) + "LP"
-            move_output_files("/home/dvfstest2/", subfolder_name, output_folder)
+            subfolder_name = extract_folder_name(SourceLocation[j]) 
+            subfolder_name2= "LP"
+            move_output_files("/home/dvfstest2/", subfolder_name, subfolder_name2 ,output_folder)
             time.sleep(5)
         
-    sp.Popen(Cmdlpr, stdout= sp.PIPE ,shell = True)
+    sp.run(Cmdlpr ,shell = True)
     # Process SP array
     for i in range(len(SP) ):
-        sp.Popen((Cmdsp+ str(SP[i])),stdout= sp.PIPE ,shell = True)
+        sp.run((Cmdsp+ str(SP[i])), shell = True)
         for j in range(len(SourceLocation) ):
              #sp.run(["python3", "power_cap_frequency_plot2.py", SourceLocation[j]])
             main(SourceLocation[j])
-            subfolder_name = extract_folder_name(SourceLocation[j]) + "SP"
-            move_output_files("/home/dvfstest2/", subfolder_name, output_folder)
+            subfolder_name = extract_folder_name(SourceLocation[j]) 
+            subfolder_name2= "SP"
+            move_output_files("/home/dvfstest2/", subfolder_name,subfolder_name2, output_folder)
             time.sleep(5)
             
 
-    sp.Popen(Cmdspr,stdout= sp.PIPE,shell =True)
+    sp.run(Cmdspr, shell =True)
     
     # Process LI array
     for i in range(len(LI) ):
-        sp.Popen((Cmdli+str(LI[i])),stdout= sp.PIPE, shell =True)
+        sp.run((Cmdli+str(LI[i])), shell =True)
         for j in range(len(SourceLocation) ):
-            subfolder_name = extract_folder_name(SourceLocation[j]) + "LI"
+            subfolder_name = extract_folder_name(SourceLocation[j]) 
+            subfolder_name2= "LI"
             main(SourceLocation[j])
-            move_output_files("/home/dvfstest2/", subfolder_name, output_folder)
+            move_output_files("/home/dvfstest2/", subfolder_name, subfolder_name2 ,output_folder)
             time.sleep(5)
 
-    sp.Popen(Cmdlir,stdout= sp.PIPE ,shell =True)    
+    sp.run(Cmdlir ,shell =True)    
     # Process SI array
     for i in range(len(SI) ):
-        sp.Popen((Cmdsi + str(SI[i])),stdout= sp.PIPE, shell = True)
+        sp.run((Cmdsi + str(SI[i])), shell = True)
         for j in range(len(SourceLocation)):    
-            subfolder_name = extract_folder_name(SourceLocation[j]) + "SI"
+            subfolder_name = extract_folder_name(SourceLocation[j]) 
+            subfolder_name2= "SI"
             main(SourceLocation[j])
-            move_output_files("/home/dvfstest2/", subfolder_name, output_folder)
+            move_output_files("/home/dvfstest2/", subfolder_name,subfolder_name2, output_folder)
             time.sleep(5)
 
 # Example usage:
 
 
-
 def main(SourceLocation):
     #print("%%%%%%%%%%%%",stop_freq_sample_thread,datetime.now())
     global home
+    # rows=[]
     #global sync_file
     #job_server=pp.Server()
 
@@ -383,6 +427,14 @@ def main(SourceLocation):
             zone_dict[key].append(x1)
     #print(zone_dict)     
     #print("\n\n\n")
+
+    df= pd.read_csv("power_data.csv")
+    watts_long=0
+    sec_long=0
+    watts_short=0
+    sec_short=0
+    
+
     zone_const={}
     temp_dict={"name":"","enabled":"","long_power":"","long_interval":"","short_power":"","short_interval":""}
     to_display=""
@@ -406,17 +458,24 @@ def main(SourceLocation):
             if "long_term" in z1:
                 if "power_limit_uw" in  zone_dict[key][x+1]:
                     zone_const[key]["long_power"]=float(((zone_dict[key][x+1].split(":"))[-1]).strip())/1000000
+                    watts_long= zone_const[key]["long_power"]
                     #print(zone_const[key]["long_power"])
                 if "time_window_us" in zone_dict[key][x+2]:
                     zone_const[key]["long_interval"]=float(((zone_dict[key][x+2].split(":"))[-1]).strip())/1000000
                     #print(zone_const[key]["long_interval"])
+                    sec_long= zone_const[key]["long_interval"]
+                    
             if "short_term" in z1:
                 if "power_limit_uw" in  zone_dict[key][x+1]:
                     zone_const[key]["short_power"]=float(((zone_dict[key][x+1].split(":"))[-1]).strip())/1000000
                     #print(zone_const[key]["short_power"])                    
+                    watts_short= zone_const[key]["short_power"]
+
                 if "time_window_us" in zone_dict[key][x+2]:    
                     zone_const[key]["short_interval"]=float(((zone_dict[key][x+2].split(":"))[-1]).strip())/1000000
                     #print(zone_const[key]["short_interval"])
+                    sec_short= zone_const[key]["short_interval"]
+                    
     #print(zone_const)
     for key in zone_const.keys():
         temp=""
@@ -434,11 +493,27 @@ def main(SourceLocation):
     print(to_display)            
 
 
+    new_data = pd.DataFrame({'binary_name': binary_name, 'watts_long' : watts_long ,'sec_long': sec_long ,'watts_short': watts_short,'sec_short':sec_short , 'file_location' : ["empty"]})
 
-    # watts_long=str(round(float(((power_c[1]).split(":")[-1]).strip()),3))
-    # sec_long=str(round(float(((power_c[2]).split(":")[-1]).strip()),3))
-    # watts_short=str(round(float(((power_c[3]).split(":")[-1]).strip()),3))
-    # sec_short=str(round(float(((power_c[4]).split(":")[-1]).strip()),3))
+# Append the new DataFrame to the existing DataFrame
+    df = df.append(new_data, ignore_index=True)
+    df.to_csv("power_data.csv",index=False)
+
+    # rows = [[binary_name,watts_long,sec_long,watts_short,sec_short,"empty"]]
+    
+    # rows.append([ binary_name, watts_long ,sec_long, watts_short ,sec_short  ,"empty"])
+
+    # filename = "power_data.csv"
+    # with open(filename, 'w') as csvfile:
+    #      csvwriter = csv.writer(csvfile) 
+        
+    # # writing the fields 
+    #      csvwriter.writerow(fields) 
+        
+    # # writing the data rows 
+    #      csvwriter.writerows(rows)
+
+
     #print(binary_name+" {Isolcpus=0} at \n",to_display)
     #plt.axis([1200,4000,0,len(l1)+10])
     #plt.plot(l1,linestyle="dashed")
